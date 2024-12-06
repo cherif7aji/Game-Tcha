@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captcha Fruit Tree</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #6DD5FA, #FFFFFF);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #instruction {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            background-color: #f8f9fa;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #gameArea {
+            position: relative;
+            width: 90%; /* Par défaut, 90% pour les petits écrans */
+            max-width: 800px; /* Largeur maximale pour les écrans plus grands */
+            height: auto; /* Ajuste la hauteur en fonction du ratio */
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+        }
+        #fruitCanvas {
+            display: block;
+            width: 100%; /* Le canvas occupe toute la largeur */
+            height: auto; /* Conserve les proportions */
+            background-color: #f9f9f9;
+            border: 2px solid #34495e;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #validateButton, #resetButton {
+            display: inline-block;
+            margin: 10px 10px;
+            padding: 12px 20px;
+            font-size: 16px; /* Taille de police réduite pour petits écrans */
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            border-radius: 25px;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        #validateButton {
+            background-color: #28a745;
+        }
+        #validateButton:hover {
+            background-color: #218838;
+            transform: scale(1.1);
+        }
+        #resetButton {
+            background-color: #dc3545;
+        }
+        #resetButton:hover {
+            background-color: #c82333;
+            transform: scale(1.1);
+        }
+        #message {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #34495e;
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        /* Responsive: pour les écrans inférieurs à 768px */
+        @media (max-width: 768px) {
+            #instruction {
+                font-size: 18px; /* Réduction de la taille de la police */
+                margin-bottom: 15px;
+                padding: 8px 15px;
+            }
+            #validateButton, #resetButton {
+                font-size: 14px; /* Réduction de la taille des boutons */
+                padding: 10px 15px;
+            }
+            #message {
+                font-size: 16px; /* Réduction de la taille du message */
+                padding: 8px;
+            }
+        }
+
+        /* Responsive: pour les écrans inférieurs à 480px */
+        @media (max-width: 480px) {
+            #instruction {
+                font-size: 16px;
+                padding: 6px 10px;
+            }
+            #gameArea {
+                padding: 10px;
+            }
+            #validateButton, #resetButton {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="instruction">
+        Tracer des cercles autour des pommes.
+    </div>
+    <div id="gameArea">
+        <canvas id="fruitCanvas"></canvas>
+        <div style="text-align: center;">
+            <button id="validateButton">Valider</button>
+            <button id="resetButton">Réinitialiser</button>
+        </div>
+        <p id="message"></p>
+    </div>
+    <script>
+        let startTime; // Déclarer startTime globalement
+
+        const canvas = document.getElementById("fruitCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Charger l'image de l'arbre avec des fruits
+        const treeImage = new Image();
+        treeImage.src = "/static/tree_with_fruits.png"; // Chemin de l'image
+        treeImage.onload = () => {
+            ctx.drawImage(treeImage, 0, 0, canvas.width, canvas.height);
+        };
+
+        let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        const circles = []; // Stocke les cercles dessinés
+
+        // Démarrer le dessin
+        canvas.addEventListener("mousedown", (e) => {
+            drawing = true;
+            lastX = e.offsetX;
+            lastY = e.offsetY;
+
+            // Initialiser startTime au début du dessin
+            startTime = Date.now();
+        });
+
+        // Arrêter le dessin
+        canvas.addEventListener("mouseup", () => {
+            drawing = false;
+        });
+
+        // Dessiner pendant le déplacement de la souris
+        canvas.addEventListener("mousemove", (e) => {
+            if (drawing) {
+                const currentX = e.offsetX;
+                const currentY = e.offsetY;
+
+                drawLine(lastX, lastY, currentX, currentY);
+
+                // Enregistrer la position comme cercle potentiel
+                circles.push({ x: currentX, y: currentY, radius: 10 });
+
+                // Mettre à jour la position
+                lastX = currentX;
+                lastY = currentY;
+            }
+        });
+
+        // Fonction pour dessiner un trait entre deux points
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = "rgba(255, 0, 0, 0.8)";
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        // Fonction de validation du CAPTCHA
+        document.getElementById("validateButton").addEventListener("click", () => {
+        console.log(circles);
+            if (!startTime) {
+                console.error("Erreur : startTime n'est pas défini.");
+                document.getElementById("message").textContent = "Erreur : Le dessin n'a pas été démarré.";
+                return;
+            }
+
+            fetch('/validate-captcha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    circles: circles,
+                    startTime: startTime,
+                    endTime: Date.now()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messageElement = document.getElementById("message");
+                messageElement.textContent = data.message;
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'appel à /validate-captcha:', error);
+                document.getElementById("message").textContent = "Erreur lors de la validation.";
+            });
+
+            
+        });
+
+        document.getElementById("resetButton").addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(treeImage, 0, 0, canvas.width, canvas.height);
+            circles.length = 0; // Réinitialiser les cercles dessinés
+            document.getElementById("message").textContent = "";
+            startTime = undefined; // Réinitialiser startTime
+        });
+
+    </script>
+</body>
+</html>
+
