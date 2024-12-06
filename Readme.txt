@@ -1,5 +1,5 @@
 #etapes à suivre pour tourner l'applicaation
-cd captcha_project
+cd game_tcha
 # Sur Linux ou macOS
 python3 -m venv venv
 source venv/bin/activate
